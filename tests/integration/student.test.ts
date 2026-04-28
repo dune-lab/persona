@@ -2,6 +2,7 @@ import { test, describe, it, expect, beforeAll, beforeEach, afterAll, afterEach 
 import { TestDataSource } from './helpers/data-source';
 
 test.mock('../../src/db/data-source', () => ({ AppDataSource: TestDataSource }));
+test.mock('@enxoval/auth', () => ({ setupAuth: test.fn() }));
 
 import { buildApp } from '../../src/app';
 import { inject } from '@enxoval/http';
