@@ -1,0 +1,83 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      HOST: 0.0.0.0
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: persona
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - persona
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: persona
+    ports:
+      - "5433:5432"
+    volumes:
+      - persona_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - persona
+
+  loki:
+    image: grafana/loki:2.9.10
+    user: "0"
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./docker/loki/config.yml:/etc/loki/config.yml
+      - persona_loki_data:/tmp/loki
+    networks:
+      - persona
+
+  promtail:
+    image: grafana/promtail:latest
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./docker/promtail/config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - loki
+    networks:
+      - persona
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "4000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - persona_grafana_data:/var/lib/grafana
+    depends_on:
+      - loki
+    networks:
+      - persona
+
+networks:
+  persona:
+    driver: bridge
+
+volumes:
+  persona_postgres_data:
+  persona_loki_data:
+  persona_grafana_data:
