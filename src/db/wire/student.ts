@@ -4,6 +4,7 @@ export class StudentDbWire {
   id!: string;
   name!: string;
   email!: string;
+  user_id!: string;
   created_at!: Date;
 
   static parse(data: unknown): StudentDbWire {
@@ -17,6 +18,7 @@ export const StudentSchema: SchemaDefinition<StudentDbWire> = defineEntity(Stude
     id: column.primaryUuid(),
     name: column.varchar(),
     email: column.varcharUnique(),
+    user_id: column.uuid(),
     created_at: column.createdAt(),
   },
 });

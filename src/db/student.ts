@@ -11,6 +11,11 @@ export async function findByEmail(email: string) {
   return row ? fromDbWire(row) : null;
 }
 
+export async function findByUserId(userId: string) {
+  const row = await repo().findOneBy({ user_id: userId });
+  return row ? fromDbWire(row) : null;
+}
+
 export const insert = asyncFn(StudentInput, Student, async (student) => {
   const row = await repo().save(toDbWire(student));
   return fromDbWire(row);
