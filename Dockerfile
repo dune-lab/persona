@@ -2,11 +2,12 @@ FROM node:24-alpine
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY persona/package.json ./package.json
+COPY persona/package-lock.json ./package-lock.json
 RUN npm ci
 
-COPY src ./src
-COPY tsconfig.json ./
+COPY persona/src ./src
+COPY persona/tsconfig.json ./tsconfig.json
 
 RUN npx tsc
 
