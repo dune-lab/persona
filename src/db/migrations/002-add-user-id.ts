@@ -1,13 +1,13 @@
 import { Migration, MigrationRunner, sql } from '@enxoval/db';
 
-export class AddUserIdToStudents002 extends Migration {
-  name = '002-add-user-id';
+export class AddUserIdToStudents1700000000002 extends Migration {
+  name = 'AddUserIdToStudents1700000000002';
 
   async up(runner: MigrationRunner): Promise<void> {
-    await sql(runner, `ALTER TABLE students ADD COLUMN user_id UUID NOT NULL`);
+    // user_id already created in migration 001 — no-op
   }
 
   async down(runner: MigrationRunner): Promise<void> {
-    await sql(runner, `ALTER TABLE students DROP COLUMN user_id`);
+    // no-op
   }
 }
