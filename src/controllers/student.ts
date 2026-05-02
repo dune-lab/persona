@@ -1,6 +1,6 @@
-import { asyncFn } from '@enxoval/types';
-import { getCurrentUser } from '@enxoval/auth';
+import { asyncFn, NotFoundError } from '@enxoval/types';
 import { StudentInput, Student } from '../model/student';
+import { GetStudentByUserWireIn } from '../wire/in/student';
 import { buildStudent } from '../logic/student';
 import * as studentDb from '../db/student';
 
@@ -10,6 +10,8 @@ export const createStudent = asyncFn(StudentInput, Student, async (input) => {
   return studentDb.insert(buildStudent(input));
 });
 
-export async function getStudentByUserId(userId: string) {
-  return studentDb.findByUserId(userId);
-}
+export const getStudentByUserId = asyncFn(GetStudentByUserWireIn, Student, async (input) => {
+  const student = await studentDb.findByUserId(input.userId);
+  if (!student) throw new NotFoundError(`Student for user ${input.userId} not found`);
+  return student;
+});

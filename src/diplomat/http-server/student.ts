@@ -1,4 +1,4 @@
-import { fn, NotFoundError } from '@enxoval/types';
+import { fn } from '@enxoval/types';
 import { getCurrentUser } from '@enxoval/auth';
 import { get, getWith, post } from '@enxoval/http';
 import { CreateStudentWireIn } from '../../wire/in/student';
@@ -29,8 +29,7 @@ export function registerStudentRoutes(): void {
   });
 
   getWith<{ userId: string }>('/students/by-user/:userId', async ({ userId }) => {
-    const student = await getStudentByUserId(userId);
-    if (!student) throw new NotFoundError(`Student for user ${userId} not found`);
+    const student = await getStudentByUserId({ userId });
     return toWireOut(student);
   });
 }
