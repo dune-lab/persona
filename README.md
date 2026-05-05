@@ -1,43 +1,46 @@
 # persona
 
-Student profile service. Manages creation and retrieval of student profiles, linked to a user from `atreides`.
+Student profile service. Manages the creation and retrieval of student profiles, each linked to a user account in `atreides`.
 
 Named after the Bene Gesserit concept of persona — the identity one presents to the world.
 
+---
+
+## Responsibilities
+
+- Create student profiles tied to user accounts
+- Expose student data to other services (odyssey, imperium)
+- Enforce that one user maps to at most one student profile
+
+---
+
 ## Stack
 
-- Node.js 22 + TypeScript
-- Fastify (via `@enxoval/http`)
-- PostgreSQL + TypeORM (via `@enxoval/db`)
-- JWT auth middleware (via `@enxoval/auth`)
-- No Kafka — pure HTTP + DB
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Node.js 24 + TypeScript |
+| HTTP | Fastify (`@enxoval/http`) |
+| Database | PostgreSQL 16 + TypeORM (`@enxoval/db`) |
+| Auth | JWT Bearer (`@enxoval/auth`) |
+| Logging | Pino structured JSON (`@enxoval/observability`) |
+| Validation | `createSchema` + `asyncFn` (`@enxoval/types`) |
+| Messaging | None — pure HTTP + DB |
 
-## How to Run
+---
 
-```bash
-cp .env.example .env
-npm install
-npm run migration:run
-npm run dev
-```
-
-Default port: **3000**
-
-## Endpoints
+## HTTP API
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/health` | — | Health check |
 | `GET` | `/docs` | — | API reference |
-| `POST` | `/students` | Bearer JWT | Create or retrieve a student profile |
+| `POST` | `/students` | Bearer JWT | Create student profile for the current user |
 | `GET` | `/students` | Bearer JWT | List all students |
 | `GET` | `/students/by-user/:userId` | Bearer JWT | Get student profile by user ID |
 
-## Examples
-
 ### POST /students
 
-The `userId` is extracted automatically from the JWT — do not send it in the body.
+The `userId` is **extracted from the JWT** — it does not need to be in the request body.
 
 ```bash
 curl -X POST http://localhost:3000/students \
@@ -46,16 +49,43 @@ curl -X POST http://localhost:3000/students \
   -d '{ "name": "Alice", "email": "alice@example.com" }'
 ```
 
-Idempotent by email — returns existing student if already created.
-
 ### GET /students/by-user/:userId
+
+Called by `imperium` during `GET /me` to resolve the student profile for the authenticated user.
 
 ```bash
 curl http://localhost:3000/students/by-user/uuid-here \
   -H 'Authorization: Bearer <token>'
 ```
 
-Returns `404` if no student exists for that user.
+Returns `404` if no student profile exists for that user.
+
+---
+
+## Database Schema
+
+| Table | Description |
+|-------|-------------|
+| `students` | Student profiles (id, name, email, userId, createdAt) |
+
+`userId` is a foreign reference (opaque UUID) to an atreides user — no join or foreign key enforcement across service boundaries.
+
+Migrations are located in `src/db/migrations/` and run automatically on startup.
+
+---
+
+## Observability
+
+Every request emits structured JSON logs:
+
+```json
+{ "level": "info", "service": "persona", "cid": "abc:0", "method": "POST", "url": "/students", "msg": "http-server: request received" }
+{ "level": "info", "service": "persona", "cid": "abc:0", "status": 201, "durationMs": 9, "msg": "http-server: response sent" }
+```
+
+Logs are available in Grafana via `{service="persona"}`.
+
+---
 
 ## Environment Variables
 
@@ -68,56 +98,31 @@ Returns `404` if no student exists for that user.
 | `DB_USER` | Postgres user |
 | `DB_PASSWORD` | Postgres password |
 | `DB_NAME` | Postgres database name |
-| `JWT_SECRET` | Secret used to validate incoming tokens |
+| `JWT_SECRET` | Secret shared across all services |
+
+---
+
+## Running Locally
+
+```bash
+cp .env.example .env
+npm install
+npm run migration:run
+npm run dev
+```
+
+Default port: **3000**
+
+---
 
 ## Scripts
 
 ```bash
-npm run dev                # dev server with hot reload
-npm run build              # compile TypeScript + generate contracts.json
-npm test                   # run all tests
-npm run unit               # unit tests only
-npm run integration        # integration tests only
-npm run lint               # check formatting and lint
-npm run lint-fix           # auto-fix formatting
-npm run migration:run      # apply pending migrations
-npm run migration:revert   # revert last migration
+npm run dev              # start with hot reload
+npm run build            # compile TypeScript
+npm test                 # run all tests (Vitest)
+npm run lint             # check formatting + lint
+npm run lint-fix         # auto-fix
+npm run migration:run    # apply pending migrations
+npm run migration:revert # revert last migration
 ```
-
-## CI Pipeline
-
-Every PR runs 5 checks in sequence:
-
-```
-Build
-├── Unit Tests
-├── Integration Tests
-└── Publish Contracts
-        └── Contract Validation
-```
-
-| Check | Description |
-|-------|-------------|
-| **Build** | Compiles TypeScript, generates `contracts.json` |
-| **Unit Tests** | Fast tests, no external dependencies |
-| **Integration Tests** | Tests with DB |
-| **Publish Contracts** | Publishes `contracts.json` to [dune-lab/contracts](https://github.com/dune-lab/contracts) |
-| **Contract Validation** | Runs kanly — validates wire compatibility with all HTTP partners |
-
-## Contract Validation
-
-Wire types live in `src/wire/`. They are defined with `createSchema` and `field.*`:
-
-```ts
-import { createSchema, field } from '@enxoval/types';
-
-export const StudentWireOut = createSchema({
-  id: field.uuid(),
-  name: field.string(),
-  email: field.string(),
-  userId: field.uuid(),
-  createdAt: field.string(),
-});
-```
-
-After every build, `contracts.json` is auto-generated via the `postbuild` script and published to [dune-lab/contracts](https://github.com/dune-lab/contracts). kanly reads this registry on every PR and validates that each consumer's `wire_in` fields are compatible with the producer's `wire_out`.
