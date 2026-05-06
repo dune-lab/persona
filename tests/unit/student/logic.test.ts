@@ -1,21 +1,24 @@
-import { describe, it, expect } from '@enxoval/testing';
+/**
+ * logic.test.ts — Unit tests for buildStudent logic using property-based itCases.
+ *
+ * Verifies that buildStudent correctly maps all input fields to the output
+ * and does not inject extra fields (id, createdAt).
+ */
+
+import { describe, itCases, expect } from '@enxoval/testing';
+import { StudentInput } from '../../../src/model/student';
 import { buildStudent } from '../../../src/logic/student';
 
-const userId = '11111111-1111-1111-1111-111111111111';
-
 describe('buildStudent', () => {
-  it('returns name and email from input', () => {
-    const result = buildStudent({ name: 'Alice', email: 'alice@example.com', userId });
-    expect(result).toEqual({ name: 'Alice', email: 'alice@example.com', userId });
+  itCases('returns all fields', StudentInput, (input) => {
+    expect(buildStudent(input)).toEqual({ name: input.name, email: input.email, userId: input.userId });
   });
 
-  it('does not generate id', () => {
-    const result = buildStudent({ name: 'Alice', email: 'alice@example.com', userId });
-    expect((result as Record<string, unknown>).id).toBeUndefined();
+  itCases('does not generate id', StudentInput, (input) => {
+    expect((buildStudent(input) as Record<string, unknown>).id).toBeUndefined();
   });
 
-  it('does not set createdAt', () => {
-    const result = buildStudent({ name: 'Alice', email: 'alice@example.com', userId });
-    expect((result as Record<string, unknown>).createdAt).toBeUndefined();
+  itCases('does not set createdAt', StudentInput, (input) => {
+    expect((buildStudent(input) as Record<string, unknown>).createdAt).toBeUndefined();
   });
 });

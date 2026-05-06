@@ -1,4 +1,4 @@
-import { test, describe, it, expect, beforeAll, beforeEach, afterAll, afterEach } from '@enxoval/testing';
+import { test, describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, generate } from '@enxoval/testing';
 import { TestDataSource } from './helpers/data-source';
 
 test.mock('../../src/db/data-source', () => ({ AppDataSource: TestDataSource }));
@@ -11,8 +11,9 @@ import { buildApp } from '../../src/app';
 import { inject } from '@enxoval/http';
 import { AppDataSource } from '../../src/db/data-source';
 import { StudentDbWire } from '../../src/db/wire/student';
+import { CreateStudentWireIn } from '../../src/wire/in/student';
 
-const validBody = { name: 'Alice', email: 'alice@example.com' };
+const validBody = generate(CreateStudentWireIn);
 
 beforeAll(async () => {
   await TestDataSource.initialize();
@@ -38,8 +39,8 @@ describe('POST /students', () => {
     expect(res.statusCode).toBe(201);
     const body = res.json();
     expect(body.id).toBeDefined();
-    expect(body.name).toBe('Alice');
-    expect(body.email).toBe('alice@example.com');
+    expect(body.name).toBe(validBody.name);
+    expect(body.email).toBe(validBody.email);
     expect(body.createdAt).toBeDefined();
   });
 
@@ -48,8 +49,8 @@ describe('POST /students', () => {
 
     const students = await AppDataSource.getRepository(StudentDbWire).find();
     expect(students).toHaveLength(1);
-    expect(students[0].name).toBe('Alice');
-    expect(students[0].email).toBe('alice@example.com');
+    expect(students[0].name).toBe(validBody.name);
+    expect(students[0].email).toBe(validBody.email);
   });
 
   it('is idempotent — second call with same email returns existing student', async () => {
@@ -80,16 +81,16 @@ describe('GET /students', () => {
   });
 
   it('returns list of students after insertion', async () => {
+    const secondBody = generate(CreateStudentWireIn);
     await inject({ method: 'POST', url: '/students', body: validBody });
-    await inject({ method: 'POST', url: '/students', body: { name: 'Bob', email: 'bob@example.com' } });
+    await inject({ method: 'POST', url: '/students', body: secondBody });
 
     const res = await inject({ method: 'GET', url: '/students' });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body).toHaveLength(2);
-    expect(body.map((s: { email: string }) => s.email).sort()).toEqual([
-      'alice@example.com',
-      'bob@example.com',
-    ]);
+    expect(body.map((s: { email: string }) => s.email).sort()).toEqual(
+      [validBody.email, secondBody.email].sort(),
+    );
   });
 });

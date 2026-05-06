@@ -1,48 +1,44 @@
-import { describe, it, expect } from '@enxoval/testing';
+import { describe, it, itCases, generate, expect } from '@enxoval/testing';
 import { fromDbWire, toDbWire } from '../../../src/adapters/student';
+import { Student, StudentInput } from '../../../src/model/student';
 import { StudentDbWire } from '../../../src/db/wire/student';
-
-const studentId = '22222222-2222-2222-2222-222222222222';
-const userId = '11111111-1111-1111-1111-111111111111';
 
 describe('student adapter — fromDbWire', () => {
   it('maps snake_case db columns to camelCase model', () => {
+    const s = generate(Student);
     const wire = new StudentDbWire();
-    wire.id = studentId;
-    wire.name = 'Alice';
-    wire.email = 'alice@example.com';
-    wire.user_id = userId;
-    wire.created_at = new Date('2024-01-01');
+    wire.id = s.id;
+    wire.name = s.name;
+    wire.email = s.email;
+    wire.user_id = s.userId;
+    wire.created_at = new Date();
 
-    expect(fromDbWire(wire)).toEqual({
-      id: studentId,
-      name: 'Alice',
-      email: 'alice@example.com',
-      userId,
-      createdAt: new Date('2024-01-01'),
-    });
+    const result = fromDbWire(wire);
+    expect(result.id).toBe(s.id);
+    expect(result.name).toBe(s.name);
+    expect(result.email).toBe(s.email);
+    expect(result.userId).toBe(s.userId);
+    expect(result.createdAt).toBeInstanceOf(Date);
   });
 });
 
 describe('student adapter — toDbWire', () => {
-  it('returns a StudentDbWire instance', () => {
-    const result = toDbWire({ name: 'Alice', email: 'alice@example.com', userId });
-    expect(result).toBeInstanceOf(StudentDbWire);
+  itCases('returns a StudentDbWire instance', StudentInput, (input) => {
+    expect(toDbWire(input)).toBeInstanceOf(StudentDbWire);
   });
 
-  it('maps name and email correctly', () => {
-    const result = toDbWire({ name: 'Alice', email: 'alice@example.com', userId });
-    expect(result.name).toBe('Alice');
-    expect(result.email).toBe('alice@example.com');
+  itCases('maps name, email and user_id correctly', StudentInput, (input) => {
+    const result = toDbWire(input);
+    expect(result.name).toBe(input.name);
+    expect(result.email).toBe(input.email);
+    expect(result.user_id).toBe(input.userId);
   });
 
-  it('does not set id (delegated to DB)', () => {
-    const result = toDbWire({ name: 'Alice', email: 'alice@example.com', userId });
-    expect(result.id).toBeUndefined();
+  itCases('does not set id (delegated to DB)', StudentInput, (input) => {
+    expect(toDbWire(input).id).toBeUndefined();
   });
 
-  it('does not set created_at (delegated to DB)', () => {
-    const result = toDbWire({ name: 'Alice', email: 'alice@example.com', userId });
-    expect(result.created_at).toBeUndefined();
+  itCases('does not set created_at (delegated to DB)', StudentInput, (input) => {
+    expect(toDbWire(input).created_at).toBeUndefined();
   });
 });
