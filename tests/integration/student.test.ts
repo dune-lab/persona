@@ -2,7 +2,10 @@ import { test, describe, it, expect, beforeAll, beforeEach, afterAll, afterEach 
 import { TestDataSource } from './helpers/data-source';
 
 test.mock('../../src/db/data-source', () => ({ AppDataSource: TestDataSource }));
-test.mock('@enxoval/auth', () => ({ setupAuth: test.fn() }));
+test.mock('@enxoval/auth', () => ({
+  setupAuth: test.fn(),
+  getCurrentUser: () => ({ userId: '11111111-1111-1111-1111-111111111111' }),
+}));
 
 import { buildApp } from '../../src/app';
 import { inject } from '@enxoval/http';
