@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY persona/package.json ./package.json
 COPY persona/package-lock.json ./package-lock.json
-RUN npm ci
+RUN npm install
 
 COPY persona/src ./src
 COPY persona/tsconfig.json ./tsconfig.json
