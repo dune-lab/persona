@@ -21,15 +21,15 @@ export function registerStudentRoutes(): void {
     const userId = getCurrentUser()!.userId;
     const student = await createStudent({ ...input, userId });
     return toWireOut(student);
-  });
+  }, { in: { schema: CreateStudentWireIn, name: 'CreateStudentWireIn' }, out: { schema: StudentWireOut, name: 'StudentWireOut' } });
 
   get('/students', async () => {
     const students = await studentDb.findAll();
     return students.map(toWireOut);
-  });
+  }, { in: null, out: { schema: StudentWireOut, name: 'StudentWireOut' } });
 
   getWith<{ userId: string }>('/students/by-user/:userId', async ({ userId }) => {
     const student = await getStudentByUserId({ userId });
     return toWireOut(student);
-  });
+  }, { in: null, out: { schema: StudentWireOut, name: 'StudentWireOut' } });
 }

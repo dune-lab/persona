@@ -6,8 +6,8 @@ import { checkHealth } from './health/index';
 import { openApiSpec } from './docs/openapi';
 
 export function buildApp(): void {
-  setupAuth({ exclude: ['/health', '/docs', '/routes', '/contracts'] });
-  get('/health', () => checkHealth());
-  html('/docs', async () => renderApiDocs(openApiSpec));
+  setupAuth({ exclude: ['/health', '/docs', '/routes'] });
+  get('/health', () => checkHealth(), { in: null, out: null });
+  html('/docs', async () => renderApiDocs(openApiSpec), { in: null, out: null });
   setupRoutes();
 }
